@@ -89,10 +89,25 @@ export default function ChatPageContent() {
     useEffect(() => {
         const authenticate = async () => {
             try {
+                // First test basic connectivity
+                console.log("Testing backend connectivity...");
+                const testResponse = await fetch("http://localhost:8000/");
+                console.log("Backend test response:", testResponse.status);
+                
+                if (testResponse.ok) {
+                    const testData = await testResponse.json();
+                    console.log("Backend test data:", testData);
+                }
+                
+                console.log("Attempting authentication...");
+                console.log("API_URL:", process.env.NEXT_PUBLIC_API_URL);
                 const auth = await getAuthToken("web_user");
+                console.log("Auth response:", auth);
                 setToken(auth.access_token);
-            } catch {
-                console.error("Failed to authenticate");
+            } catch (error) {
+                console.error("Failed to authenticate:", error);
+                console.error("Error details:", error instanceof Error ? error.message : String(error));
+                console.error("Error name:", error instanceof Error ? error.name : String(error));
             }
         };
         authenticate();
@@ -139,11 +154,25 @@ export default function ChatPageContent() {
                     }, token!);
 
                     if (response.status === "success") {
-                        const a2uiResponse = response.data.output || response.data.llm_response;
-                        if (a2uiResponse) {
-                            const parsedA2UI = JSON.parse(a2uiResponse);
-                            setCurrentA2UI(parsedA2UI);
-                            responseText = a2uiResponse;
+                        // Handle A2UI responses from code mode
+                        if (response.data.type === "a2ui_response" && response.data.payload) {
+                            console.log("A2UI response received:", response.data);
+                            setCurrentA2UI(response.data.payload as any);
+                            responseText = "A2UI interface generated successfully!";
+                        } 
+                        // Fallback for other A2UI response formats
+                        else {
+                            const a2uiResponse = response.data.output || response.data.llm_response;
+                            if (a2uiResponse) {
+                                try {
+                                    const parsedA2UI = JSON.parse(a2uiResponse);
+                                    setCurrentA2UI(parsedA2UI as any);
+                                    responseText = a2uiResponse;
+                                } catch (e) {
+                                    console.error("Failed to parse A2UI response:", e);
+                                    responseText = "A2UI response format error";
+                                }
+                            }
                         }
                     }
                 } catch (error) {
@@ -159,7 +188,26 @@ export default function ChatPageContent() {
                 }, token!);
 
                 if (response.status === "success") {
-                    responseText = response.data.llm_response || response.data.output || "No response";
+                    // Handle casual responses
+                    if (response.data.type === "casual_response") {
+                        responseText = (response.data.content as string) || "Hello! How can I help you with your studies today?";
+                    }
+                    // Handle structured academic responses from study mode
+                    else if (response.data.type === "structured_academic_response") {
+                        const content = response.data.content as any;
+                        if (response.data.template === "2_mark" && content.points) {
+                            responseText = `**${content.title}**\n\n${content.points.map((point: string, index: number) => `${index + 1}. ${point}`).join('\n')}`;
+                        } else if (response.data.template === "13_mark" && content.introduction) {
+                            responseText = `**${content.title || 'Answer'}**\n\n**Introduction:** ${content.introduction}\n**Diagram:** ${content.diagram_description}\n**Explanation:**\n${content.explanation_points.map((point: string, index: number) => `${index + 1}. ${point}`).join('\n')}\n**Advantages:**\n${content.advantages.map((adv: string) => `- ${adv}`).join('\n')}\n**Conclusion:** ${content.conclusion}`;
+                        } else if (response.data.template === "mcq" && content.question) {
+                            responseText = `**Question:** ${content.question}\n\n${content.options.map((opt: any) => `${opt.label}. ${opt.text}`).join('\n')}\n**Correct Answer:** ${content.correct_option}\n**Explanation:** ${content.explanation}`;
+                        } else {
+                            responseText = JSON.stringify(content, null, 2);
+                        }
+                    } else {
+                        // Regular responses
+                        responseText = response.data.llm_response || response.data.output || JSON.stringify(response.data) || "No response";
+                    }
                     
                     const assistantMessage: Message = {
                         id: (Date.now() + 1).toString(),
@@ -212,13 +260,13 @@ export default function ChatPageContent() {
         );
     };
 
-    const handleCopy = (text: string, id: string) => {
+    const handleCopy = useCallback((text: string, id: string) => {
         navigator.clipboard.writeText(text);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
-    };
+    }, []);
 
-    const handleNewSession = () => {
+    const handleNewSession = useCallback(() => {
         const newId = `session_${Date.now()}`;
         setSessions((prev) => [
             { id: newId, title: "New Chat", mode, messageCount: 0, lastMessage: new Date() },
@@ -227,17 +275,17 @@ export default function ChatPageContent() {
         setActiveSession(newId);
         setMessages([]);
         setCurrentRiskScore(null);
-    };
+    }, [mode]);
 
-    const handleDeleteMessages = () => {
+    const handleDeleteMessages = useCallback(() => {
         if (!confirm("Clear all messages in this session?")) return;
         setMessages([]);
         setTotalTokens(0);
         setCurrentRiskScore(null);
         localStorage.removeItem("aegis_messages");
-    };
+    }, []);
 
-    const handleClearCache = async () => {
+    const handleClearCache = useCallback(async () => {
         if (!confirm("Are you sure you want to clear the global semantic cache?")) return;
         try {
             await clearSession("global", token!);
@@ -245,7 +293,7 @@ export default function ChatPageContent() {
         } catch (err: any) {
             alert(err.message);
         }
-    };
+    }, [token]);
 
     const sidebarContent = (
         <ChatSidebar
@@ -264,13 +312,13 @@ export default function ChatPageContent() {
 
     return (
         <div className="h-screen flex bg-background">
-            {/* Desktop Sidebar */}
-            <aside className="hidden lg:flex w-72 border-r border-white/5 bg-card/30 flex-col">
+            {/* Desktop Sidebar - Fixed Position */}
+            <aside className="hidden lg:flex w-72 border-r border-white/5 bg-card/30 flex-col fixed h-screen left-0 top-0 z-10">
                 {sidebarContent}
             </aside>
 
-            {/* Main Area */}
-            <div className="flex-1 flex flex-col min-w-0">
+            {/* Main Area - Add left margin to account for fixed sidebar */}
+            <div className="flex-1 flex flex-col min-w-0 lg:ml-72">
                 {/* Top Bar */}
                 <ChatTopBar
                     mode={mode}
@@ -353,7 +401,7 @@ export default function ChatPageContent() {
                                     <h3 className="text-lg font-semibold text-blue-400 mb-4">Live A2UI Rendering</h3>
                                     <A2UIRenderer
                                         data={currentA2UI}
-                                        onAction={(action) => {
+                                        onAction={(action: any) => {
                                             console.log('A2UI Action:', action);
                                             // Handle A2UI interactions here
                                         }}

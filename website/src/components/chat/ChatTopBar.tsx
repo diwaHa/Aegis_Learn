@@ -4,6 +4,7 @@ import { LogOut, Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetTrigger, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
 
 import { Mode, modeConfig } from "@/types/chat";
 
@@ -14,6 +15,11 @@ interface ChatTopBarProps {
 
 
 export default function ChatTopBar({ mode, sidebarContent }: ChatTopBarProps) {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const ModeIcon = modeConfig[mode].icon;
 
@@ -21,18 +27,24 @@ export default function ChatTopBar({ mode, sidebarContent }: ChatTopBarProps) {
         <header className="h-14 border-b border-white/5 bg-card/20 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
             <div className="flex items-center gap-3">
                 {/* Mobile menu */}
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <button className="lg:hidden w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                            <Menu className="w-4 h-4" />
-                        </button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-72 p-0 bg-card border-white/5">
-                        {/* provide an accessible title for the dialog */}
-                        <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-                        {sidebarContent}
-                    </SheetContent>
-                </Sheet>
+                {isClient ? (
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <button className="lg:hidden w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                                <Menu className="w-4 h-4" />
+                            </button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-72 p-0 bg-card border-white/5" suppressHydrationWarning>
+                            {/* provide an accessible title for the dialog */}
+                            <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+                            {sidebarContent}
+                        </SheetContent>
+                    </Sheet>
+                ) : (
+                    <button className="lg:hidden w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                        <Menu className="w-4 h-4" />
+                    </button>
+                )}
 
                 <div className="flex items-center gap-2">
                     <ModeIcon className={`w-5 h-5 ${modeConfig[mode].color}`} />

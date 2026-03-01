@@ -1,6 +1,6 @@
 from typing import Any, Optional
-from middleware.modes import handle_general_mode, handle_code_mode, handle_study_mode
-from middleware.core.cache import cache, context_manager
+from modes import handle_general_mode, handle_code_mode, handle_study_mode
+from core.cache import cache, context_manager
 import logging
 
 logger = logging.getLogger(__name__)

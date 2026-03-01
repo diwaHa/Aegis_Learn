@@ -202,7 +202,7 @@ _audit_logger = AuditLogger()
 async def handle_general_mode(
     message: str, session_id: str, industry: str = "general"
 ) -> Dict[str, Any]:
-    from middleware.core.llm import call_llm
+    from core.llm import call_llm
 
     # 1. Redact
     redacted_prompt, pii_counts = _redactor.redact(message, industry)

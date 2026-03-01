@@ -58,7 +58,10 @@ async def call_llm_json(prompt: str, system_instruction: str = "", schema: Optio
     Parses and returns the result as a dict.
     Falls back to a stub dict if the SDK / key is unavailable.
     """
+    logger.info(f"[LLM] call_llm_json called: model={_model is not None}, schema={schema.__name__ if schema else None}")
+    
     if _model is None:
+        logger.warning("[LLM] Model not configured, returning stub")
         return {"error": "LLM not configured", "stub": True}
 
     json_instruction = (
@@ -69,11 +72,17 @@ async def call_llm_json(prompt: str, system_instruction: str = "", schema: Optio
         "You MUST respond ONLY with valid JSON. No markdown, no explanation.\n\n"
     )
     full_prompt = f"{system_instruction}\n\n{json_instruction}{prompt}"
+    
+    logger.info(f"[LLM] Sending prompt to Gemini: {full_prompt[:200]}...")
 
     try:
         response = _model.generate_content(full_prompt)
         raw = response.text.strip().lstrip("```json").rstrip("```").strip()
-        return json.loads(raw)
+        logger.info(f"[LLM] Gemini raw response: {raw[:200]}...")
+        
+        parsed = json.loads(raw)
+        logger.info(f"[LLM] Successfully parsed JSON: {type(parsed)}")
+        return parsed
     except json.JSONDecodeError as e:
         logger.error(f"[LLM] JSON parse failed: {e}\nRaw: {response.text[:200]}")
         return {"error": "JSON parse failed", "raw": response.text[:200]}

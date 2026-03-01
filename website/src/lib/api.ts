@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Temporarily hardcoded for testing
+const API_URL = "http://localhost:8000"; // process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export interface ChatRequest {
     mode: "general" | "study" | "code";
@@ -36,13 +37,26 @@ export interface AuthResponse {
 }
 
 export async function getAuthToken(userId: string): Promise<AuthResponse> {
-    const res = await fetch(`${API_URL}/auth/token`, {
+    const url = `${API_URL}/auth/token`;
+    console.log("getAuthToken called with:", { userId, url, API_URL });
+    
+    const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId }),
     });
-    if (!res.ok) throw new Error("Failed to get auth token");
-    return res.json();
+    
+    console.log("Response status:", res.status, res.statusText);
+    
+    if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Response error:", errorText);
+        throw new Error(`Failed to get auth token: ${res.status} ${errorText}`);
+    }
+    
+    const result = await res.json();
+    console.log("Auth result:", result);
+    return result;
 }
 
 export async function sendA2UIMessage(

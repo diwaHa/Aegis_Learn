@@ -129,7 +129,7 @@ def get_token_usage() -> Dict[str, Any]:
 
 def get_assignment_tracker(user_id: str) -> Dict[str, Any]:
     """Summarises assignment status for a given user."""
-    from middleware.core.classroom import _assignment_store, _reminder_log
+    from core.classroom import _assignment_store, _reminder_log
 
     assignments = _assignment_store.get(user_id, [])
     now = datetime.now(timezone.utc)
@@ -170,7 +170,7 @@ def _pseudo_encrypt(data: str) -> str:
 
 
 def get_encrypted_audit_export() -> Dict[str, Any]:
-    from middleware.modes.general_mode import _audit_logger
+    from modes.general_mode import _audit_logger
     raw = json.dumps(_audit_logger.get_logs(), indent=2)
     encrypted_blob = _pseudo_encrypt(raw)
     return {

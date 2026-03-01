@@ -8,121 +8,121 @@ export interface A2UIAction {
 }
 
 export default function A2UIRenderer({ data, onAction, className }: any) {
-  if (!data) return null;
+  if (!data || !Array.isArray(data)) return null;
 
-  const validation = validateA2UI(data);
-  if (!validation.isValid) {
-    return React.createElement('div', {
-      className: `p-4 border border-red-500/30 bg-red-500/10 rounded-lg ${className || ''}`
-    }, [
-      React.createElement('h3', { className: 'text-lg font-semibold text-red-400 mb-2' }, 'A2UI Validation Error'),
-      React.createElement('div', { className: 'space-y-2' }, 
-        validation.errors.map((error: string, index: number) =>
-          React.createElement('div', { key: index, className: 'flex items-center gap-2 text-sm text-red-300' }, [
-            React.createElement('span', { className: 'w-2 h-2 rounded-full bg-red-500/20 flex items-center justify-center' },
-              React.createElement('span', { className: 'text-xs font-bold' }, '!')
-            ),
-            React.createElement('span', null, error)
-          ])
-        )
-      )
-    ]);
+  // Parse A2UI messages to extract surface and components
+  let createSurface = null;
+  let updateComponents = null;
+  let beginRendering = null;
+
+  for (const message of data) {
+    if (message.createSurface) {
+      createSurface = message.createSurface;
+    }
+    if (message.updateComponents) {
+      updateComponents = message.updateComponents;
+    }
+    if (message.beginRendering) {
+      beginRendering = message.beginRendering;
+    }
   }
 
+  if (!createSurface) {
+    return React.createElement('div', null, 'No surface defined');
+  }
+
+  const { surfaceId } = createSurface;
+  const surfaceClass = `a2ui-surface a2ui-surface-${surfaceId} ${className || ''}`;
+
   const renderComponent = (component: any): any => {
-    const { componentId, componentType, properties, children } = component;
+    const { id, component: componentData } = component;
+    
+    if (!componentData) {
+      return React.createElement('div', { key: id }, 'Empty component');
+    }
+    
+    // Handle different component types
+    const componentType = Object.keys(componentData)[0];
+    const properties = componentData[componentType];
     
     switch (componentType) {
-      case 'heading':
-        const level = properties?.level || 1;
-        const Tag = `h${level}` as any;
-        return React.createElement(Tag, {
-          className: properties?.className,
-          style: properties?.style
-        }, properties?.text || 'Heading');
-      
-      case 'text':
-        return React.createElement('p', {
-          className: properties?.className,
-          style: properties?.style
-        }, properties?.content || 'Text content');
-      
-      case 'button':
+      case 'Button':
         return React.createElement('button', {
-          className: `px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ${properties?.className || ''}`,
-          style: properties?.style,
+          key: id,
+          className: `px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors`,
           onClick: () => {
             const action: A2UIAction = {
               type: 'click',
-              componentId,
-              data: properties?.onClick
+              componentId: id,
+              data: properties
             };
             onAction?.(action);
           }
-        }, properties?.text || 'Button');
+        }, properties.label?.literalString || 'Button');
       
-      case 'input':
+      case 'TextField':
         return React.createElement('input', {
-          type: properties?.type || 'text',
-          placeholder: properties?.placeholder,
-          required: properties?.required,
-          className: `px-3 py-2 border rounded ${properties?.className || ''}`,
-          style: properties?.style,
+          key: id,
+          type: 'text',
+          placeholder: properties.placeholder?.literalString || '',
+          className: `px-3 py-2 border rounded ${properties.className || ''}`,
           onChange: (e: any) => {
             const action: A2UIAction = {
               type: 'change',
-              componentId,
+              componentId: id,
               data: { value: e.target.value }
             };
             onAction?.(action);
           }
         });
       
-      case 'container':
-        const direction = properties?.direction || 'column';
-        const gap = properties?.gap || 'medium';
-        const containerClass = `flex ${direction === 'row' ? 'flex-row' : 'flex-col'} gap-${gap} ${properties?.className || ''}`;
-        
+      case 'Text':
+        return React.createElement('p', {
+          key: id,
+          className: properties.className || ''
+        }, properties.text?.literalString || 'Text content');
+      
+      case 'Column':
+        const children = properties.children?.explicitList || [];
         return React.createElement('div', {
-          className: containerClass,
-          style: properties?.style
-        }, children?.map((child: any, index: number) =>
-          React.createElement('div', { key: index }, renderComponent(child))
-        ));
+          key: id,
+          className: `flex flex-col gap-2 ${properties.className || ''}`
+        }, children.map((childId: string) => {
+          const childComponent = updateComponents?.components?.find((c: any) => c.id === childId);
+          return childComponent ? renderComponent(childComponent) : null;
+        }));
+      
+      case 'Row':
+        const rowChildren = properties.children?.explicitList || [];
+        return React.createElement('div', {
+          key: id,
+          className: `flex flex-row gap-2 ${properties.className || ''}`
+        }, rowChildren.map((childId: string) => {
+          const childComponent = updateComponents?.components?.find((c: any) => c.id === childId);
+          return childComponent ? renderComponent(childComponent) : null;
+        }));
       
       default:
         return React.createElement('div', {
-          className: `p-4 border border-gray-300 rounded ${properties?.className || ''}`,
-          style: properties?.style
+          key: id,
+          className: `p-4 border border-gray-300 rounded ${properties.className || ''}`
         }, [
-          React.createElement('div', { className: 'text-sm text-gray-600' }, `Unknown component type: ${componentType}`),
+          React.createElement('div', { key: 'unknown-type', className: 'text-sm text-gray-600' }, `Unknown component type: ${componentType}`),
           React.createElement('pre', { 
+            key: 'component-debug',
             className: 'text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto' 
           }, JSON.stringify(component, null, 2))
         ]);
     }
   };
 
-  const renderA2UI = (): any => {
-    if (!data.createSurface) {
-      return React.createElement('div', null, 'No surface defined');
-    }
-
-    const { surfaceId, surfaceType } = data.createSurface;
-    const surfaceClass = `a2ui-surface a2ui-surface-${surfaceType} ${className || ''}`;
-
-    return React.createElement('div', {
-      className: surfaceClass,
-      style: data.createSurface?.style
-    }, data.updateComponents?.map((component: any, index: number) =>
-      React.createElement('div', { 
-        key: component.componentId || index, 
-        className: 'a2ui-component' 
-      }, renderComponent(component))
-    ));
-  };
-
   return React.createElement('div', {
-    className: 'a2ui-renderer'
-  }, renderA2UI());
+    className: surfaceClass,
+    style: createSurface?.style
+  }, updateComponents?.components?.map((component: any, index: number) =>
+    React.createElement('div', { 
+      key: component.id || index, 
+      className: 'a2ui-component' 
+    }, renderComponent(component))
+  ));
 }
