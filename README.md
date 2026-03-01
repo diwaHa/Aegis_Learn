@@ -1,4 +1,4 @@
-# 🛡️ Aegis Learn - Multi-Mode AI Middleware Platform
+# 🛡️ Aegis Learn - Multi-Mode Intelligent AI Platform
 
 > **A smart, privacy-aware, academically-structured, cost-optimized AI proxy** built for the AMD Singapore Hackathon 2025
 
