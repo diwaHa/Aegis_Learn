@@ -137,10 +137,10 @@ This project was developed for the AMD Singapore Hackathon, showcasing advanced 
 |---|---|---|
 | **1** | FastAPI Gateway + Mode Router + Code Mode (A2UI) | ✅ Complete |
 | **2** | Structured Study Engine (Pydantic Schemas) | ✅ Complete |
-| **3** | Privacy Middleware — PII Redaction + Risk Scoring | ✅ Complete |
-| **4** | Token Optimization — Semantic Cache + Context Pruning | ✅ Complete |
+| **3** | Privacy Middleware: PII Redaction + Risk Scoring | ✅ Complete |
+| **4** | Token Optimization: Semantic Cache + Context Pruning | ✅ Complete |
 | **5** | Google Classroom Integration + Smart Reminders | ✅ Complete |
-| **6** | Monitoring Dashboard — Analytics, Heatmap, Audit Export | ✅ Complete |
+| **6** | Monitoring Dashboard: Analytics, Heatmap, Audit Export | ✅ Complete |
 
 ---
 
