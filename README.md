@@ -14,7 +14,7 @@ Aegis Learn is a **Multi-Mode Intelligent AI Platform** that sits between your a
 
 ### 🎯 Built For AMD Slingshot Hackathon 2025
 
-This project was developed for the AMD Singapore Hackathon, showcasing advanced AI middleware capabilities with privacy protection, academic structuring, and intelligent UI generation.
+This project was developed for the AMD Slingshot Hackathon, showcasing advanced AI middleware capabilities with privacy protection, academic structuring, and intelligent UI generation.
 
 ---
 
