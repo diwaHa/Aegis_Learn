@@ -90,10 +90,10 @@ export default function Hero() {
                     transition={{ duration: 0.8, delay: 0.1 }}
                 >
                     <span className="bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
-                        Middleware
+                        Aegis
                     </span>
                     <span className="bg-gradient-to-r from-red-accent to-red-accent-light bg-clip-text text-transparent">
-                        AI
+                        Learn
                     </span>
                 </motion.h1>
 
@@ -169,3 +169,4 @@ export default function Hero() {
         </section>
     );
 }
+
